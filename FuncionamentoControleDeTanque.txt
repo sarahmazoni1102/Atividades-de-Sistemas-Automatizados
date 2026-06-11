@@ -1,0 +1,19 @@
+Funcionamento Controle De Nivel Agua & Funções dos botões
+
+função do start - ligar o sistema em repouso
+função do reset - resetar o sistema quando alarme e valvula drenagem ativar
+função do stop - parar o sistema 
+temporizador max - ativa o alarme quando tempo for maior que temporizdor de proteção
+temporizador_proteção - reseta a bomba automaticamente apos atingir um tempo
+contador_ciclo enchimento - usado para contagem de ciclos de transbordamento para relatorios e manuntenção dos sensores
+
+modo_automatico - liga bomba  + temporizador min & max
+modo_manual - controle manual do sistema o usuario deve acionar o botão stop antes do alarme ativar
+
+sensor nivel baixo - ativa farol_verde_baixo e um sensor de ativação para agua minima
+
+sensor nivel medio - ativa farol_verde_medio 
+
+sensor nivel alto - ativa farol laranja
+
+sensor nivel max - ativa alarme , valvula_drenagem & farol vermelho

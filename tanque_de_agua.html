@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Controle de Tanque de água</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 20px;
+}
+
+.tank {
+    width: 120px;
+    height: 300px;
+    border: 3px solid white;
+    position: relative;
+    background: #222;
+}
+
+.water {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #00aaff;
+    transition: height 0.3s linear;
+}
+
+.light {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #333;
+    margin: 6px auto;
+}
+
+.green { background: green; }
+.yellow { background: yellow; }
+.orange { background: orange; }
+.red { background: red; }
+.blue { background: deepskyblue; }
+
+button { margin: 5px; padding: 10px; }
+
+.alarm {
+    margin-top: 10px;
+    color: red;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Controle de Tanque de água</h2>
+
+<div class="container">
+
+    <!-- TANQUE -->
+    <div class="tank">
+        <div id="water" class="water" style="height:0%"></div>
+    </div>
+
+    <!-- NÍVEIS -->
+    <div>
+        <div id="low" class="light green"></div>
+        <div id="mid" class="light yellow"></div>
+        <div id="high" class="light orange"></div>
+        <div id="max" class="light red"></div>
+    </div>
+
+    <!-- BOMBAS -->
+    <div>
+        <div id="pump" class="light green"></div>
+        <small>Bomba</small>
+
+        <div id="drainPump" class="light blue"></div>
+        <small>Drenagem</small>
+    </div>
+
+</div>
+
+<div>
+    <button onclick="start()">Ligar</button>
+    <button onclick="stop()">Parar</button>
+    <button onclick="reset()">Reset</button>
+    <button onclick="forceOverflow()">Falha Sensor Nível Alto</button>
+    <button onclick="forceDry()">Forçar Operação a Seco</button>
+</div>
+
+<div class="alarm" id="alarm">Sistema OK</div>
+
+<script>
+
+let level = 0;
+
+let state = "STOP"; 
+// STOP | FILL | DRAIN | OVERFLOW | DRY
+
+let alarm = false;
+let startup = true;
+
+let interval = null;
+
+function updateUI() {
+
+    document.getElementById("water").style.height = level + "%";
+
+    document.getElementById("low").style.opacity = level >= 20 ? 1 : 0.2;
+    document.getElementById("mid").style.opacity = level >= 50 ? 1 : 0.2;
+    document.getElementById("high").style.opacity = level >= 80 ? 1 : 0.2;
+    document.getElementById("max").style.opacity = level >= 100 ? 1 : 0.2;
+
+    // 🔌 bomba de enchimento
+    document.getElementById("pump").style.opacity =
+        state === "FILL" ? 1 : 0.2;
+
+    // 💧 bomba de drenagem
+    document.getElementById("drainPump").style.opacity =
+        state === "DRAIN" || state === "DRY" ? 1 : 0.2;
+
+    document.getElementById("alarm").innerText =
+        alarm ? "⚠ ALARME ATIVO" : "Sistema OK";
+}
+
+function loop() {
+
+    clearInterval(interval);
+
+    interval = setInterval(() => {
+
+        if (alarm) return;
+
+        // ======================
+        // OVERFLOW
+        // ======================
+        if (state === "OVERFLOW") {
+
+            level += 1;
+
+            if (level >= 100) {
+                level = 100;
+                alarm = true;
+                state = "STOP";
+                clearInterval(interval);
+            }
+
+            updateUI();
+            return;
+        }
+
+        // ======================
+        // 🔥 OPERAÇÃO A SECO (FORÇADA REAL)
+        // ======================
+        if (state === "DRY") {
+
+            // bomba de enchimento OFF
+            // drenagem FORÇADA ON
+
+            level -= 1;
+
+            if (level <= 20) {
+                level = 20;
+                alarm = true;
+                state = "STOP";
+                clearInterval(interval);
+            }
+
+            updateUI();
+            return;
+        }
+
+        // ======================
+        // DRENAGEM NORMAL
+        // ======================
+        if (state === "DRAIN") {
+
+            level -= 1;
+
+            if (level <= 50) {
+                level = 50;
+                state = "FILL";
+            }
+
+            updateUI();
+            return;
+        }
+
+        // ======================
+        // ENCHIMENTO NORMAL
+        // ======================
+        if (state === "FILL") {
+
+            level += 0.8;
+
+            if (level >= 80) {
+                level = 80;
+                state = "DRAIN";
+            }
+        }
+
+        // ======================
+        // PROTEÇÃO SECO NORMAL
+        // ======================
+        if (!startup && level <= 20 && state === "FILL") {
+            alarm = true;
+            state = "STOP";
+            clearInterval(interval);
+        }
+
+        if (level > 20) startup = false;
+
+        updateUI();
+
+    }, 100);
+}
+
+// ======================
+// CONTROLES
+// ======================
+
+function start() {
+    if (alarm) return;
+    state = "FILL";
+    loop();
+}
+
+function stop() {
+    state = "STOP";
+    clearInterval(interval);
+}
+
+function reset() {
+    stop();
+    level = 0;
+    alarm = false;
+    startup = true;
+    state = "STOP";
+    updateUI();
+}
+
+function forceOverflow() {
+    state = "OVERFLOW";
+    loop();
+}
+
+function forceDry() {
+    state = "DRY";
+    loop();
+}
+
+updateUI();
+
+</script>
+
+</body>
+</html>
